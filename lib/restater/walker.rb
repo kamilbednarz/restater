@@ -1,5 +1,6 @@
 require 'nokogiri'
 require 'open-uri'
+require 'json'
 
 module Restater
   class Walker
@@ -19,14 +20,17 @@ module Restater
     end
 
     def run
+      results = []
       while @counter <= @pages_to_process
+        puts "Analyzing page #{@counter}..."
         links = self.get_offer_links(load_page)
 
-        results = links[0..3].map { |link| Result.from_url(link) }
-        puts results.map { |a| [a.title, a.price, a.size].inspect }
-
+        matches = links.map { |link| Result.from_url(link) }
+        results << matches.select(&:is_valid?).map { |m| {:count => m.price_per_square_meter.to_i, :lat => m.coordinates[0], :lng => m.coordinates[1]}}
         @counter += 1
       end
+      puts results.flatten.to_json
+      results.flatten
     end
 
     def get_offer_links page
